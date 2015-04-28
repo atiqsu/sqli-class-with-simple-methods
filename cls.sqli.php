@@ -95,17 +95,19 @@ class SQLi extends mysqli
         return $this->runSelectQuery($query, $arrayIdx);
     }
 
-
     /**
      * @param array $whereArr
      * @param bool $arrayIdx
+     * @param int $limit
+     * @param int $offset
      * @return array|bool|int
      */
-    public function listAll($whereArr=array(), $arrayIdx= true){
+    public function listAll($whereArr=array(), $arrayIdx= true, $limit=0, $offset=0){
         $query = "SELECT * FROM $this->tableName ";
         if(is_array($whereArr) && count($whereArr)>0){
             $query .= 'WHERE '.$this->createWhere($whereArr);
         }
+        if($limit>0 && $offset>=0)    $query .= " LIMIT $limit OFFSET $offset" ;
         return $this->runSelectQuery($query, $arrayIdx);
     }
 
