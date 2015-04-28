@@ -115,10 +115,11 @@ class SQLi extends mysqli
      * @param array $whereArr
      * @param bool $arrayIdx
      * @param bool $onlyZeroIndex
+     * @param string $alias
      * @return array|bool|int
      */
-    public function count($whereArr=array(), $arrayIdx=false, $onlyZeroIndex=false){
-        $query = "SELECT COUNT(*) AS total FROM $this->tableName ";
+    public function count($whereArr=array(), $arrayIdx=false, $onlyZeroIndex=false, $alias ='count'){
+        $query = "SELECT COUNT(*) AS $alias FROM $this->tableName ";
         if(is_array($whereArr) && count($whereArr)>0){
             $query .= 'WHERE '.$this->createWhere($whereArr);
         }
