@@ -112,6 +112,26 @@ class SQLi extends mysqli
     }
 
     /**
+     * @param array $whereArr
+     * @param bool $arrayIdx
+     * @param bool $onlyZeroIndex
+     * @return array|bool|int
+     */
+    public function count($whereArr=array(), $arrayIdx=false, $onlyZeroIndex=false){
+        $query = "SELECT COUNT(*) AS total FROM $this->tableName ";
+        if(is_array($whereArr) && count($whereArr)>0){
+            $query .= 'WHERE '.$this->createWhere($whereArr);
+        }
+        if(true === $onlyZeroIndex){
+            $result = $this->runSelectQuery($query, $arrayIdx);
+            if(is_array($result) && count($result)>0) return $result[0];
+            return $result;
+        }
+        return $this->runSelectQuery($query, $arrayIdx);
+    }
+
+
+    /**
      * @param $id
      * @return bool
      */
@@ -130,6 +150,7 @@ class SQLi extends mysqli
 
 
     /**
+     * todo : free mysql result...
      * @param $qry
      * @param null $arrayKey
      * @return array|bool|int
