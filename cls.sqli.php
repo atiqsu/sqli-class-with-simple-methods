@@ -80,14 +80,18 @@ class SQLi extends mysqli
         return $this->query($qry);
     }
 
+
     /**
      * @param null $id
      * @param bool $arrayIdx
+     * @param int $limit
+     * @param int $offset
      * @return array|bool|int
      */
-    public function read($id=null, $arrayIdx= true){
+    public function read($id=null, $arrayIdx= true, $limit=0, $offset=0){
         $query = "SELECT * FROM $this->tableName ";
         if($id!=NULL and $id>0) $query .= " WHERE `$this->primaryKey` = $id " ;
+        if($limit>0 && $offset>=0)    $query .= " LIMIT $limit OFFSET $offset" ;
         return $this->runSelectQuery($query, $arrayIdx);
     }
 
