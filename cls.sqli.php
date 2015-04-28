@@ -107,7 +107,7 @@ class SQLi extends mysqli
         if(is_array($whereArr) && count($whereArr)>0){
             $query .= 'WHERE '.$this->createWhere($whereArr);
         }
-        if($limit>0 && $offset>=0)    $query .= " LIMIT $limit OFFSET $offset" ;
+        if($limit>0 && $offset>=0)    $query .= " LIMIT $limit OFFSET $offset " ;
         return $this->runSelectQuery($query, $arrayIdx);
     }
 
