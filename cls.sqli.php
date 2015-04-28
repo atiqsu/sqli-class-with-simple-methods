@@ -133,6 +133,25 @@ class SQLi extends mysqli
 
 
     /**
+     * @param string $clause
+     * @param bool $arrayIdx
+     * @param bool $onlyZeroIndex
+     * @param string $alias
+     * @return array|bool|int
+     */
+    public function countWithClause($clause='', $arrayIdx=false, $onlyZeroIndex=true, $alias ='count'){
+        $query = "SELECT COUNT(*) AS $alias FROM $this->tableName ";
+        if(strlen($clause)>5) $query .= $clause ;
+        if(true === $onlyZeroIndex){
+            $result = $this->runSelectQuery($query, $arrayIdx);
+            if(is_array($result) && count($result)>0) return $result[0];
+            return $result;
+        }
+        return $this->runSelectQuery($query, $arrayIdx);
+    }
+
+
+    /**
      * @param $id
      * @return bool
      */
