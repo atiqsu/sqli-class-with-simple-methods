@@ -80,17 +80,55 @@ class SQLi extends mysqli
         return $this->query($qry);
     }
 
+    public function getRows($fields=array('*'), $where=array(), $orderBy=array(), $limit=0, $offset=0){
+        $query = "SELECT ";
+        $query .= $this->arrayToQueryString($fields);
+        if(is_array($where) && count($where)>0) $query .= ' WHERE '.$this->arrayToQueryString($where);
+
+
+    }
+
+    /**
+     * @param $array
+     * @param bool $useArrayKey
+     * @param string $sep
+     * @return string
+     */
+    public function arrayToQueryString($array , $useArrayKey=false, $sep=', '){
+        if(is_array($array)){
+            $sap = '';
+            $output = '';
+            if($useArrayKey===true){
+                foreach($array as $key=>$vl){
+                    $output .= $sap.$key.$vl;
+                    $sap= $sep;
+                }
+                return $output;
+            }else{
+                foreach($array as $ar){
+                    $output .= $sap.$ar;
+                    $sap= $sep;
+                }
+                return $output;
+            }
+        }elseif(is_string($array)){
+            return $array;
+        }
+        return strval($array) ;
+    }
 
     /**
      * @param null $id
      * @param bool $arrayIdx
      * @param int $limit
      * @param int $offset
+     * @param string $orderByClause
      * @return array|bool|int
      */
-    public function read($id=null, $arrayIdx= true, $limit=0, $offset=0){
+    public function read($id=null, $arrayIdx= true, $limit=0, $offset=0, $orderByClause=''){
         $query = "SELECT * FROM $this->tableName ";
         if($id!=NULL and $id>0) $query .= " WHERE `$this->primaryKey` = $id " ;
+        $query .= ' '.$orderByClause ;
         if($limit>0 && $offset>=0)    $query .= " LIMIT $limit OFFSET $offset" ;
         return $this->runSelectQuery($query, $arrayIdx);
     }
@@ -100,13 +138,15 @@ class SQLi extends mysqli
      * @param bool $arrayIdx
      * @param int $limit
      * @param int $offset
+     * @param string $orderByClause
      * @return array|bool|int
      */
-    public function listAll($whereArr=array(), $arrayIdx= true, $limit=0, $offset=0){
+    public function listAll($whereArr=array(), $arrayIdx= true, $limit=0, $offset=0, $orderByClause=''){
         $query = "SELECT * FROM $this->tableName ";
         if(is_array($whereArr) && count($whereArr)>0){
             $query .= 'WHERE '.$this->createWhere($whereArr);
         }
+        $query .= ' '.$orderByClause ;
         if($limit>0 && $offset>=0)    $query .= " LIMIT $limit OFFSET $offset " ;
         return $this->runSelectQuery($query, $arrayIdx);
     }

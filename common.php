@@ -16,14 +16,19 @@ error_reporting(-1);
 
 require_once 'cls.sqli.php';
 
-$dbName = 'local_db';
-$user = 'atiqur';
-$pass = '@secret';
-$db = new \commonSql\SQLi($user, $pass, $dbName);
+    $dbName = 'local_db';
+    $user = 'atiqur';
+    $pass = '@secret';
+//    $user = 'root';
+//    $pass = '';
+    $db = new \commonSql\SQLi($user, $pass, $dbName);
 
-$db->setDomain('user');
-$userId = 5;
-$db->delete($userId);
-$db->dump($db->read(), 'end of example');
+    $test = array();
+    $db->dump($db->arrayToQueryString($test));
+
+//    $db->setDomain('user');
+//    $userId = 5;
+//    $db->delete($userId);
+//    $db->dump($db->read(), 'end of example');
 
 //$db->dump($db, false);
