@@ -490,6 +490,55 @@ class SQLi extends mysqli
         return $this->create($qry, $returnId);
     }
 
+    public function insertFromArray($conf){
+
+        $column = $conf['header'] ;
+        $values = $conf['values'];
+        $sql = 'INSERT INTO '.$this->tablePrefix.$this->tableName.'('.$this->arrayToCsv($column).') VALUES '.$this->makeQry($conf);
+
+        die($sql);
+
+    }
+
+    protected function makeQry($conf){
+
+        $column = $conf['header'] ;
+        $values = $conf['values'];
+        $ln = count($values);
+        $separator = '';
+        $sqlInsert ='';
+
+        for($i=0; $i<$ln; $i++){
+            $vGlue = '';
+            $sap = '';
+            foreach($column as $hd){
+                $values[$i][$hd] = '';
+                $vGlue .= "'".$values[$i][$hd]."'".$sap ;
+                $sap = ', ';
+            }
+
+            $sqlInsert = $separator."(".$vGlue.")";
+            $separator = ', ';
+        }
+
+        return $sqlInsert ;
+    }
+
+    public static function arrayToCsv($arr=array(), $separator=', ', $sqlQuoted = true, $quote = '`'){
+
+        if(is_array($arr) and count($arr)>0){
+            $sap='';
+            $return='';
+            foreach($arr as $r){
+                if($sqlQuoted == true)  $return.=$sap.$quote.$r.$quote;
+                else  $return.=$sap.$r;
+                $sap=$separator;
+            }
+            return $return;
+
+        }else return '';
+    }
+
     /**
      * Run queries that return only boolean.
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
