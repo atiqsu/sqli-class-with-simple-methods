@@ -490,6 +490,7 @@ class SQLi extends mysqli
         return $this->create($qry, $returnId);
     }
 
+    //========================== in-progress work =============================
     public function insertFromArray($conf){
 
         $column = $conf['header'] ;
@@ -524,6 +525,15 @@ class SQLi extends mysqli
         return $sqlInsert ;
     }
 
+    /**
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param array $arr
+     * @param string $separator
+     * @param bool $sqlQuoted
+     * @param string $quote
+     * @return string
+     */
     public static function arrayToCsv($arr=array(), $separator=', ', $sqlQuoted = true, $quote = '`'){
 
         if(is_array($arr) and count($arr)>0){
@@ -538,6 +548,8 @@ class SQLi extends mysqli
 
         }else return '';
     }
+
+    //========================== end of in-progress work =============================
 
     /**
      * Run queries that return only boolean.
