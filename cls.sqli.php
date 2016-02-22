@@ -20,6 +20,9 @@
  *
  *  Added method :
  *
+ *
+ * Suggestion to add
+ * 1. mapArray(Tools) -- dumpArray/printArray --- trait
  */
 
 namespace commonSql;
@@ -267,7 +270,7 @@ class SQLi extends mysqli
      * @return bool
      */
     public function setPrimary($str = 'id'){
-        if(strlen($str)>0){
+        if(strlen($str)>0 && !is_bool($str)){
             $this->primaryKey = $str ;
             return true;
         }
@@ -974,9 +977,9 @@ class SQLi extends mysqli
     function getTableColumnList($tableName='', $onlyColumn = true){
 
         $db= $this->getCurrentDbName();
-        $qry="SELECT COLUMN_NAME, TABLE_NAME, TABLE_SCHEMA, TABLE_CATALOG, IS_NULLABLE, DATA_TYPE, COLUMN_TYPE, PRIVILEGES, EXTRA
+        $qry="SELECT COLUMN_NAME, TABLE_NAME, TABLE_SCHEMA, TABLE_CATALOG, IS_NULLABLE, DATA_TYPE, COLUMN_TYPE, PRIVILEGES, EXTRA, ORDINAL_POSITION
                 FROM INFORMATION_SCHEMA.COLUMNS COL
-                WHERE COL.TABLE_SCHEMA='$db' ";
+                WHERE COL.TABLE_SCHEMA='$db' ORDER BY ORDINAL_POSITION ";
         if(strlen(trim($tableName))>0) $qry .= " AND TABLE_NAME='$tableName'";
         $qry .= " ORDER BY `COL`.`TABLE_NAME` ASC ";
 
@@ -1111,7 +1114,7 @@ class SQLi extends mysqli
      * @param null $die_msg
      * @param bool $varDump
      */
-    public function dump($var, $die=true, $die_msg=NULL, $varDump=false){
+    public static function dump($var, $die=true, $die_msg=NULL, $varDump=false){
 
         if('comment'===$die){   echo '<!-- <pre>';}
         else{ echo '<pre>';}
@@ -1134,7 +1137,7 @@ class SQLi extends mysqli
      * @param bool $die
      * @return void
      */
-    public function dumps($die=true){
+    public static function dumps($die=true){
         echo '<pre>';
         $args = func_get_args();
         foreach ($args as $arg){
@@ -1145,6 +1148,22 @@ class SQLi extends mysqli
         }
         echo "</pre>";
         if($die===true)	die('Died from dumps helper...');
+    }
+
+
+    /**
+     * output string in pre tag.
+     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.1
+     * @param $var
+     * @param bool $die
+     * @param null $die_msg
+     * @return void
+     */
+    public static function dumpInPre($var, $die=false, $die_msg=NULL){
+
+        echo '<pre>'.$var.'</pre>';
+        if($die===true)	die('Died from sql helper dumper'.$die_msg);
     }
 
 
@@ -1162,17 +1181,82 @@ class SQLi extends mysqli
 
     /**
      * Alias of printBreak method.
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.0
      * @param bool $eol
      * @return void
      */
-    public function println($eol = false){
-        $this->printBreak($eol);
+    public static function println($eol = false){
+        self::printBreak($eol);
+    }
+
+    //=========== very customized functions only project basis : (zend model helper)================
+
+    /**
+     * Helper for writing model in zend project.
+     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.1
+     * @param string $domainName
+     * @param bool $dumpToo
+     * @return string
+     */
+    public function getTableColumnAsVariable($domainName = '', $dumpToo = false){
+        if(empty($domainName)) $domainName = self::getCurrentDomainName() ;
+        if(empty($domainName)) die('Domain name not found.');
+
+        $dbName = self::getCurrentDbName() ;
+        $tables = self::getTableList() ;
+        $tables = $tables[$dbName] ;
+
+        if(!in_array($domainName,$tables)) die('Domain:'.$domainName.' do not exist in given database.');
+
+        $return =' '.PHP_EOL;
+        $cols = self::getTableColumnList($domainName);
+        foreach($cols[$domainName] as $col) $return .= 'public $'.$col.' ;'.PHP_EOL ;
+
+        if($dumpToo === true) self::dumpInPre($return);
+        return $return ;
     }
 
 
-    //Ideas to implement
+    /**
+     * Helper for exchange array function in model of zend framework.
+     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param string $domainName
+     * @param bool $dumpToo
+     * @return string
+     */
+    public function createExchangeArrayFunctionBody($domainName = '', $dumpToo = false){
+        if(empty($domainName)) $domainName = self::getCurrentDomainName() ;
+        if(empty($domainName)) die('Domain name not found.');
+
+        $dbName = self::getCurrentDbName() ;
+        $tables = self::getTableList() ;
+        $tables = $tables[$dbName] ;
+
+        if(!in_array($domainName,$tables)) die('Domain:'.$domainName.' do not exist in given database.');
+
+        $return =' '.PHP_EOL;
+        $cols = self::getTableColumnList($domainName);
+        foreach($cols[$domainName] as $col){
+
+            if($col == 'created' || $col == 'updated')
+                $return .= '$this->'.$col.'  = (isset($data[\''.$col.'\']))  ? $data[\''.$col.'\']  : date(\'Y-m-d H:i:s\');'.PHP_EOL ;
+            elseif($col == 'created_by' || $col == 'updated_by' || $col == 'order' || $col == 'active' || $col == 'rank')
+                $return .= '$this->'.$col.'  = (isset($data[\''.$col.'\']))  ? $data[\''.$col.'\']  : 1;'.PHP_EOL ;
+            else $return .= '$this->'.$col.'  = (isset($data[\''.$col.'\']))  ? $data[\''.$col.'\']  : null;'.PHP_EOL ;
+
+        }
+
+        if($dumpToo === true) self::dumpInPre($return);
+        return $return ;
+    }
+
+
+    //========== end of project specific functions =================================================
+
+    //Ideas to implementat_role
     /**
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.0
