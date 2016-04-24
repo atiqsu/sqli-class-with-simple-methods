@@ -25,7 +25,7 @@
  * 1. mapArray(Tools) -- dumpArray/printArray --- trait
  */
 
-namespace commonSqlOnDev;
+namespace commonSql;
 use Mysqli;
 
 /**
