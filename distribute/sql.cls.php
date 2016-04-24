@@ -11,7 +11,7 @@
 
 
 
-namespace secureSQLOnDev;
+namespace secureSQL;
 use Mysqli;
 
 
@@ -327,6 +327,7 @@ class SQLi extends mysqli
         $this->tablePrefix = $str;
     }
 
+
     /**
      * Alias of setTablePrefix.
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
@@ -337,6 +338,7 @@ class SQLi extends mysqli
     public function setDomainPrefix($str=''){
         $this->setTablePrefix($str);
     }
+
 
     /**
      * Get table prefix.
@@ -359,7 +361,7 @@ class SQLi extends mysqli
     }
 
     /**
-     * Get current primary key column name. --todo make it auto if not set but domain set
+     * Get current primary key column name.
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.0
      * @return string
@@ -370,7 +372,7 @@ class SQLi extends mysqli
 
 
     /**
-     * Set primary key filed column name. -todo make it auto if not set but domain set
+     * Set primary key filed column name.
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.0
      * @param string $str
@@ -395,9 +397,7 @@ class SQLi extends mysqli
     public function helpMe($die = true){
 
         echo self::PRE_START ;
-
         echo 'Where Array::'.PHP_EOL;
-
         echo self::PRE_END ;
         if($die) die('died from help me........in sql class');
     }
@@ -470,12 +470,6 @@ class SQLi extends mysqli
      * @return mixed|string
      */
     public function sanitizeSmart($data){
-
-        //ALTER DATABASE databaseName CHARACTER SET utf8 COLLATE utf8_unicode_ci;
-        //ALTER TABLE tableName CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
-        //ALTER TABLE rma CHARACTER SET utf8 COLLATE utf8_general_ci;ALTER TABLE rma CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
-        //$mysqli->set_charset("utf8")
-        //$mysqli->character_set_name() --todo must improve these part
 
         $str = trim($data);
         $str = iconv("UTF-8", "UTF-8//IGNORE", $str); // drop all non utf-8 characters
@@ -689,7 +683,7 @@ class SQLi extends mysqli
     }
 
     /**
-     * Run a valid query.... sanitize :todo
+     * Run a valid query.
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.0
      * @updated since 1.0.1
@@ -1030,7 +1024,7 @@ class SQLi extends mysqli
 
         $return = '';
         if(!empty($array)){
-            $return .= $withOrderBy? 'ORDER BY ' :'' ;
+            $return .= $withOrderBy? ' ORDER BY ' :'' ;
 
             if(is_array($array)){
                 $sap = '';
