@@ -7,7 +7,10 @@
  * Time: 5:15 PM
  */
 
+namespace Traits\commonFunction ;
+
 
 trait commonFunction {
+
 
 }
