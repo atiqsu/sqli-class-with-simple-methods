@@ -1,37 +1,25 @@
 <?php
 /**
- * General purpose sql class for rapid development.
+ * Created by Md. Atiqur Rahman
+ * Email: atiq.cse.cu0506.su@gmail.com
+ * Skype: atiq.cu
+ * Date: 10/03/2016
+ * Time: 1:04 PM
  *
- * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
- * @created 2015-04-07 11:16:00
- * @skype  - atiq.cu
- * @version 1.0.1
- * @uses --.
- * @last updated - 2015-11-25
- * @link - http://php.net/manual/en/mysqli.prepare.php - see more for ideas to implement.
+ * This class is a reviewed version of SQLi with more security in mind.
  */
 
-/**
- * Change log : v- 1.0.1
- *  Removed method :
- *      1. arrayToQueryString
- *      2. count
- *      3. countWithClause
- *
- *  Added method :
- *
- *
- * Suggestion to add
- * 1. mapArray(Tools) -- dumpArray/printArray --- trait
- */
 
-namespace commonSql;
+
+namespace secureSQL;
 use Mysqli;
 
+
 /**
- * Extended mysqli class to serve frequently needed functionality.
+ * Extended mysqli class to serve frequently needed functionality with more secured way and performance.
+ * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+ * @version 1.0.5
  * @package commonSql
- * @version 1.0.1
  */
 class SQLi extends mysqli
 {
@@ -45,6 +33,10 @@ class SQLi extends mysqli
     protected $tableName ;
     protected $tablePrefix = '' ;
     private $primaryKey = 'id' ;
+
+    const PRE_START = '<pre>';
+    const PRE_END = '</pre>';
+    const BR = '<br/>';
 
     /**
      * Constructor method
@@ -80,17 +72,6 @@ class SQLi extends mysqli
         }
         $this->dbLink = $this ;
         return $this->dbLink;
-    }
-
-    /**
-     * Basic and simple sanitize.
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.5
-     * @param $data
-     * @return string
-     */
-    public function sanitizeSimple($data){
-        return htmlentities($data, ENT_QUOTES, 'UTF-8');
     }
 
     /**
@@ -146,6 +127,17 @@ class SQLi extends mysqli
     }
 
     /**
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.5
+     * @return bool
+     */
+    private function resetDomain(){
+        $this->tableName = null ;
+        $this->lastMsg = 'Domain reset. No domain currently selected.';
+        return true;
+    }
+
+    /**
      * Alias of setDomain.
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.1
@@ -190,22 +182,93 @@ class SQLi extends mysqli
 
 
     /**
-     * Delete a table from database. - todo - if current domain is for delete then reset this->tableName etc...
+     * Full table name used in select query
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.1
-     * @param $domainName - actual database table name : returned by getCurrentDomainName method.
+     * @since 1.0.5
+     * @return string
+     */
+    public function getTableWithPrefix(){
+        return $this->tablePrefix.$this->tableName ;
+    }
+
+
+    /**
+     * Delete a table from database.
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.5
+     * @param null $table - name of the table without prefix
      * @param bool $giveMessage
      * @return bool|\mysqli_result
      */
-    public function deleteDomain($domainName, $giveMessage = true){
+    public function deleteDomain( $table = null, $giveMessage = true){
+
+        $resetFlag = false;
+        if(empty($table)){
+            $domainName = $this->tablePrefix.$this->tableName ;
+            $resetFlag = true;
+        }
+        else{
+            $countLn = strlen($this->tablePrefix);
+            if($countLn>0){
+                $sb = substr($table, 0, $countLn);
+                if($sb !=false) $table = substr($table, $countLn);
+            }
+
+            $domainName = $this->tablePrefix.$table ;
+            if($table == $this->tableName) $resetFlag = true;
+        }
 
         $qry = 'DROP TABLE `'.$domainName.'`';
         $result = $this->runQuery($qry) ;
         if($giveMessage){
-            if($result == true) echo 'Domain :'.$domainName.' successfully deleted.';
+            if($result == true){
+                echo 'Domain :'.$domainName.' successfully deleted.';
+                if($resetFlag)  $this->resetDomain();
+            }
             else echo 'Domain :'.$domainName.' deletion failed. --'.$this->lastError;
         }
         return $result;
+    }
+
+
+    /**
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param $domainName - table name with prefix.
+     * @param bool $giveMessage
+     * @return bool|\mysqli_result
+     */
+    public function deleteDomainRaw($domainName, $giveMessage = true){
+
+        $qry = 'DROP TABLE `'.$domainName.'`';
+        $result = $this->runQuery($qry) ;
+        if($giveMessage){
+            if($result == true){
+                echo 'Domain :'.$domainName.' successfully deleted.';
+                if($domainName == $this->tableName) $this->resetDomain();
+            }
+            else echo 'Domain :'.$domainName.' deletion failed. --'.$this->lastError;
+        }
+        return $result;
+    }
+
+
+    /**
+     * For debugging purpose only.
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.5
+     * @param bool $die
+     * @return void
+     */
+    public function debugMsg($die = true){
+
+        echo self::PRE_START;
+        echo $this->lastMsg.self::BR;
+        echo $this->lastQuery.self::BR;
+        echo $this->lastError.self::BR;
+        echo self::PRE_END;
+
+        if($die == true) die('from debug info...');
     }
 
     /**
@@ -241,6 +304,19 @@ class SQLi extends mysqli
 
 
     /**
+     * Alias of createDomain method.
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.5
+     * @param $name
+     * @param bool $giveMessage
+     * @return bool|\mysqli_result
+     */
+    public function createSampleTable($name, $giveMessage = true){
+        return $this->createDomain($name, $giveMessage);
+    }
+
+
+    /**
      * Set/Change table prefix.
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.0
@@ -263,7 +339,7 @@ class SQLi extends mysqli
     }
 
     /**
-     * Get current primary key column name.
+     * Get current primary key column name. --todo make it auto if not set but domain set
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.0
      * @return string
@@ -274,7 +350,7 @@ class SQLi extends mysqli
 
 
     /**
-     * Set primary key filed column name.
+     * Set primary key filed column name. -todo make it auto if not set but domain set
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.0
      * @param string $str
@@ -286,6 +362,24 @@ class SQLi extends mysqli
             return true;
         }
         return false;
+    }
+
+
+    /**
+     * Help for remembering argument format.
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param bool $die
+     * @return void
+     */
+    public function helpMe($die = true){
+
+        echo self::PRE_START ;
+
+        echo 'Where Array::'.PHP_EOL;
+
+        echo self::PRE_END ;
+        if($die) die('died from help me........in sql class');
     }
 
 
@@ -333,6 +427,47 @@ class SQLi extends mysqli
         return $this->delete($id);
     }
 
+
+    /**
+     * Basic and simple sanitize.
+     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param $data
+     * @param bool $doubleCheck - some times it won't work only htmlentities from copy -pasted text then make it true.
+     * @return string
+     */
+    public function sanitizeSimple($data, $doubleCheck = false){
+        if($doubleCheck) $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+        return htmlentities($data, ENT_QUOTES, 'UTF-8');
+    }
+
+
+    /**
+     * Removing non-utf char and double space then making html escape.
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.5
+     * @param $data
+     * @return mixed|string
+     */
+    public function sanitizeSmart($data){
+
+        //ALTER DATABASE databaseName CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+        //ALTER TABLE tableName CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+        //ALTER TABLE rma CHARACTER SET utf8 COLLATE utf8_general_ci;ALTER TABLE rma CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
+        //$mysqli->set_charset("utf8")
+        //$mysqli->character_set_name() --todo must improve these part
+
+        $str = trim($data);
+        $str = iconv("UTF-8", "UTF-8//IGNORE", $str); // drop all non utf-8 characters
+
+        // this is some bad utf-8 byte sequence that makes mysql complain - control and formatting i think
+        $str = preg_replace('/(?>[\x00-\x1F]|\xC2[\x80-\x9F]|\xE2[\x80-\x8F]{2}|\xE2\x80[\xA4-\xA8]|\xE2\x81[\x9F-\xAF])/', '-', $str);
+        $str = preg_replace('/\s+/', ' ', $str);
+        $str = $this->sanitizeSimple($str);
+        return $str;
+    }
+
+
     /**
      * Get all rows or single row from database table.
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
@@ -351,6 +486,7 @@ class SQLi extends mysqli
         if($limit>0 && $offset>=0)    $query .= " LIMIT $limit OFFSET $offset" ;
         return $this->runSelectQuery($query, $arrayIdx);
     }
+
 
     /**
      * Alias of read method
@@ -383,6 +519,19 @@ class SQLi extends mysqli
     public function getRow($id=null, $arrayIdx= true, $limit=0, $offset=0, $orderByClause=''){
 
         return $this->read($id, $arrayIdx, $limit, $offset, $orderByClause);
+    }
+
+
+    /**
+     * Return all entry of the table.
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.5
+     * @param string $orderByClause
+     * @return array|bool|int
+     */
+    public function getAll($orderByClause=''){
+
+        return $this->read(null, true, 0, 0, $orderByClause);
     }
 
 
@@ -504,66 +653,7 @@ class SQLi extends mysqli
         return $this->create($qry, $returnId);
     }
 
-    //========================== in-progress work =============================
-    public function insertFromArray($conf){
 
-        $column = $conf['header'] ;
-        $values = $conf['values'];
-        $sql = 'INSERT INTO '.$this->tablePrefix.$this->tableName.'('.$this->arrayToCsv($column).') VALUES '.$this->makeQry($conf);
-
-        die($sql);
-
-    }
-
-    protected function makeQry($conf){
-
-        $column = $conf['header'] ;
-        $values = $conf['values'];
-        $ln = count($values);
-        $separator = '';
-        $sqlInsert ='';
-
-        for($i=0; $i<$ln; $i++){
-            $vGlue = '';
-            $sap = '';
-            foreach($column as $hd){
-                $values[$i][$hd] = '';
-                $vGlue .= "'".$values[$i][$hd]."'".$sap ;
-                $sap = ', ';
-            }
-
-            $sqlInsert = $separator."(".$vGlue.")";
-            $separator = ', ';
-        }
-
-        return $sqlInsert ;
-    }
-
-    /**
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.0
-     * @param array $arr
-     * @param string $separator
-     * @param bool $sqlQuoted
-     * @param string $quote
-     * @return string
-     */
-    public static function arrayToCsv($arr=array(), $separator=', ', $sqlQuoted = true, $quote = '`'){
-
-        if(is_array($arr) and count($arr)>0){
-            $sap='';
-            $return='';
-            foreach($arr as $r){
-                if($sqlQuoted == true)  $return.=$sap.$quote.$r.$quote;
-                else  $return.=$sap.$r;
-                $sap=$separator;
-            }
-            return $return;
-
-        }else return '';
-    }
-
-    //========================== end of in-progress work =============================
 
     /**
      * Run queries that return only boolean.
@@ -633,6 +723,38 @@ class SQLi extends mysqli
                     $return['byPrimary'][$rows[$this->primaryKey]]= $rows ;   // array by primary key....
                 }
             }
+            return $return ;
+
+        }elseif($result->num_rows==0){
+            $this->lastError = 'every thing OK . 0 result found for select query. -'.$qry;
+            return $return;
+
+        }else{
+            $this->lastError = 'Something error happened on select query : '.$qry ;
+            return false ;
+        }
+    }
+
+    /**
+     * todo : free mysql result...add options for metadata like lastId, affectedRows etc
+     * @param $qry
+     * @param null $arrayKey
+     * @return array|bool|int
+     */
+    public function selectQuery($qry, $arrayKey = null){
+
+        $return = array();
+        $result = $this->runQuery($qry);
+        if($result === false){
+            $this->lastError = 'Select Query failed! --('.$qry.') :: '.$this->lastError;
+            return false;
+        }
+        if($result->num_rows>0){
+
+            while($rows=$result->fetch_assoc()){
+                $return[]= $rows ;
+            }
+
             return $return ;
 
         }elseif($result->num_rows==0){
@@ -1201,6 +1323,67 @@ class SQLi extends mysqli
         self::printBreak($eol);
     }
 
+    //========================== in-progress work =============================
+    public function insertFromArray($conf){
+
+        $column = $conf['header'] ;
+        $values = $conf['values'];
+        $sql = 'INSERT INTO '.$this->tablePrefix.$this->tableName.'('.$this->arrayToCsv($column).') VALUES '.$this->makeQry($conf);
+
+        die($sql);
+
+    }
+
+    protected function makeQry($conf){
+
+        $column = $conf['header'] ;
+        $values = $conf['values'];
+        $ln = count($values);
+        $separator = '';
+        $sqlInsert ='';
+
+        for($i=0; $i<$ln; $i++){
+            $vGlue = '';
+            $sap = '';
+            foreach($column as $hd){
+                $values[$i][$hd] = '';
+                $vGlue .= "'".$values[$i][$hd]."'".$sap ;
+                $sap = ', ';
+            }
+
+            $sqlInsert = $separator."(".$vGlue.")";
+            $separator = ', ';
+        }
+
+        return $sqlInsert ;
+    }
+
+    /**
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param array $arr
+     * @param string $separator
+     * @param bool $sqlQuoted
+     * @param string $quote
+     * @return string
+     */
+    public static function arrayToCsv($arr=array(), $separator=', ', $sqlQuoted = true, $quote = '`'){
+
+        if(is_array($arr) and count($arr)>0){
+            $sap='';
+            $return='';
+            foreach($arr as $r){
+                if($sqlQuoted == true)  $return.=$sap.$quote.$r.$quote;
+                else  $return.=$sap.$r;
+                $sap=$separator;
+            }
+            return $return;
+
+        }else return '';
+    }
+
+    //========================== end of in-progress work =============================
+
     //=========== very customized functions only project basis : (zend model helper)================
 
     /**
@@ -1291,3 +1474,4 @@ class SQLi extends mysqli
     }
     //end of ideas
 }
+
