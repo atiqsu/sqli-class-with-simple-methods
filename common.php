@@ -14,17 +14,17 @@ ini_set('E_ERROR',1);
 error_reporting(-1);
 */
 
-require_once 'cls.sqli.php';
+
+require_once 'sql.cls.php';
 
     $dbName = 'local_db';
     $user = 'atiqur';
     $pass = '@secret';
-//    $user = 'root';
-//    $pass = '';
+
     $db = new \commonSql\SQLi($user, $pass, $dbName);
 
     $test = array();
-    $db->dump($db->arrayToQueryString($test));
+    $db->dump($test);
 
 //    $db->setDomain('user');
 //    $userId = 5;

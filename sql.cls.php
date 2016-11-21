@@ -1,18 +1,41 @@
 <?php
 /**
- * Created by Md. Atiqur Rahman
- * Email: atiq.cse.cu0506.su@gmail.com
- * Skype: atiq.cu
- * Date: 10/03/2016
- * Time: 1:04 PM
+ * General purpose sql class for rapid development.
+ *
+ * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+ * @created 2015-04-07 11:16:00
+ * @skype  - atiq.cu
+ * @version 1.0.6
+ * @uses --.
+ * @last updated - 2016-11-20
+ *
  *
  * This class is a reviewed version of SQLi with more security in mind.
+ *
  */
 
-
+/**
+ * Change log : v- 1.0.6
+ * many things changed since last commit; no track
+ *
+ *
+ * Change log : v- 1.0.1
+ *  Removed method :
+ *      1. arrayToQueryString
+ *      2. count
+ *      3. countWithClause
+ *
+ *  Added method :
+ *
+ *
+ * Suggestion to add
+ * use this magic function for debug __debugInfo
+ * http://php.net/manual/en/language.oop5.magic.php#object.sleep
+ */
 
 namespace secureSQLOnDev;
-use Mysqli;
+
+use mysqli;
 
 
 /**
@@ -23,6 +46,8 @@ use Mysqli;
  */
 class SQLi extends mysqli
 {
+
+    use \commonFunction, \ongoingTrait;
 
     public $dbLink ;
     public $lastError = null ;
@@ -448,44 +473,6 @@ class SQLi extends mysqli
     }
 
 
-    /**
-     * Basic and simple sanitize.
-     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.0
-     * @param $data
-     * @param bool $doubleCheck - some times it won't work only htmlentities from copy -pasted text then make it true.
-     * @return string
-     */
-    public function sanitizeSimple($data, $doubleCheck = false){
-        if($doubleCheck) $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
-        return htmlentities($data, ENT_QUOTES, 'UTF-8');
-    }
-
-
-    /**
-     * Removing non-utf char and double space then making html escape.
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.5
-     * @param $data
-     * @return mixed|string
-     */
-    public function sanitizeSmart($data){
-
-        //ALTER DATABASE databaseName CHARACTER SET utf8 COLLATE utf8_unicode_ci;
-        //ALTER TABLE tableName CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
-        //ALTER TABLE rma CHARACTER SET utf8 COLLATE utf8_general_ci;ALTER TABLE rma CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
-        //$mysqli->set_charset("utf8")
-        //$mysqli->character_set_name() --todo must improve these part
-
-        $str = trim($data);
-        $str = iconv("UTF-8", "UTF-8//IGNORE", $str); // drop all non utf-8 characters
-
-        // this is some bad utf-8 byte sequence that makes mysql complain - control and formatting i think
-        $str = preg_replace('/(?>[\x00-\x1F]|\xC2[\x80-\x9F]|\xE2[\x80-\x8F]{2}|\xE2\x80[\xA4-\xA8]|\xE2\x81[\x9F-\xAF])/', '-', $str);
-        $str = preg_replace('/\s+/', ' ', $str);
-        $str = $this->sanitizeSimple($str);
-        return $str;
-    }
 
 
     /**
@@ -509,19 +496,16 @@ class SQLi extends mysqli
 
 
     /**
-     * Alias of read method
+     * Get row by primary field id
      * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.1
-     * @param null $id
+     * @since 1.0.0
+     * @param $id
      * @param bool $arrayIdx
-     * @param int $limit
-     * @param int $offset
-     * @param string $orderByClause
      * @return array|bool|int
      */
-    public function findById($id=null, $arrayIdx= true, $limit=0, $offset=0, $orderByClause=''){
+    public function findById($id, $arrayIdx= false){
 
-        return $this->read($id, $arrayIdx, $limit, $offset, $orderByClause);
+        return $this->read($id, $arrayIdx, 0, 0);
     }
 
 
@@ -552,6 +536,22 @@ class SQLi extends mysqli
     public function getAll($orderByClause=''){
 
         return $this->read(null, true, 0, 0, $orderByClause);
+    }
+
+
+    /**
+     * Get all rows from selected database table.
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param bool $arrayIdx - fetch method i.e true -- fetch_assoc,
+     * @param int $limit
+     * @param int $offset
+     * @param string $orderByClause
+     * @return array|bool|int
+     */
+    public function all($arrayIdx= false, $limit=0, $offset=0, $orderByClause=''){
+
+        return $this->read(null, $arrayIdx, $limit, $offset, $orderByClause);
     }
 
 
@@ -1015,7 +1015,7 @@ class SQLi extends mysqli
         return $operatorString;
     }
 
-    //done but QA not complete
+    #done but QA not complete
 
 
     /**
@@ -1211,7 +1211,7 @@ class SQLi extends mysqli
         $ret='';
         $sap= '';
         foreach($arr as $key=>$val){
-            $ret .= $sap." `$key` = '".$this->dbLink->real_escape_string($val)."' ";
+            $ret .= $sap." `$key` = '".$this->sanitizeSimple($val)."' ";
             $sap = ' AND ';
         }
         return $ret ;
@@ -1232,7 +1232,7 @@ class SQLi extends mysqli
         $sap = '';
         foreach($array as $fld=>$val){
             $qry .= "$sap `$fld`" ;
-            $vl .= "$sap '".$this->dbLink->real_escape_string($val)."'" ;
+            $vl .= "$sap '".$this->sanitizeSimple($val)."'" ;
             $sap= ',';
         }
 
@@ -1248,161 +1248,19 @@ class SQLi extends mysqli
      * @return string
      */
     public function helpUpdate ($arr){
-        //UPDATE table_name SET column1=value1,column2=value2,...  WHERE some_column=some_value;
+        #UPDATE table_name SET column1=value1,column2=value2,...  WHERE some_column=some_value;
         if(!is_array($arr)) return false;
         $qry = "UPDATE $this->tableName SET ";
         $vl='';
         $sap = '';
         foreach($arr as $fld=>$val){
-            $vl .= "$sap `$fld`= '".$this->dbLink->real_escape_string($val)."'" ;
+            $vl .= "$sap `$fld`= '".$this->sanitizeSimple($val)."'" ;
             $sap= ',';
         }
         $query = $qry . " " . $vl ;
         return $query ;
     }
 
-    /**
-     * @param $var
-     * @param bool $die
-     * @param null $die_msg
-     * @param bool $varDump
-     */
-    public static function dump($var, $die=true, $die_msg=NULL, $varDump=false){
-
-        if('comment'===$die){   echo '<!-- <pre>';}
-        else{ echo '<pre>';}
-
-        if($varDump===true)  var_dump($var);
-        elseif(is_array($var) && count($var)>0) print_r($var);
-        elseif(is_object($var)) print_r($var);
-        else var_dump($var);
-
-        if($die==='comment') echo '-->';
-        else echo '</pre>';
-        if($die===true)	die('Died from dump helper...'.$die_msg);
-
-    }
-
-    /**
-     * Dump as many as you want .
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.0
-     * @param bool $die
-     * @return void
-     */
-    public static function dumps($die=true){
-        echo '<pre>';
-        $args = func_get_args();
-        foreach ($args as $arg){
-            if(is_array($arg) && count($arg)>0) print_r($arg);
-            elseif(is_object($arg)) print_r($arg);
-            else var_dump($arg);
-
-        }
-        echo "</pre>";
-        if($die===true)	die('Died from dumps helper...');
-    }
-
-
-    /**
-     * output string in pre tag.
-     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.1
-     * @param $var
-     * @param bool $die
-     * @param null $die_msg
-     * @return void
-     */
-    public static function dumpInPre($var, $die=false, $die_msg=NULL){
-
-        echo '<pre>'.$var.'</pre>';
-        if($die===true)	die('Died from sql helper dumper'.$die_msg);
-    }
-
-
-    /**
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.0
-     * @param bool $eol
-     * @return void
-     */
-    public static function printBreak($eol = false){
-
-        if($eol) echo PHP_EOL ;
-        else     echo '<br/>';
-    }
-
-    /**
-     * Alias of printBreak method.
-     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.0
-     * @param bool $eol
-     * @return void
-     */
-    public static function println($eol = false){
-        self::printBreak($eol);
-    }
-
-    //========================== in-progress work =============================
-    public function insertFromArray($conf){
-
-        $column = $conf['header'] ;
-        $values = $conf['values'];
-        $sql = 'INSERT INTO '.$this->tablePrefix.$this->tableName.'('.$this->arrayToCsv($column).') VALUES '.$this->makeQry($conf);
-
-        die($sql);
-
-    }
-
-    protected function makeQry($conf){
-
-        $column = $conf['header'] ;
-        $values = $conf['values'];
-        $ln = count($values);
-        $separator = '';
-        $sqlInsert ='';
-
-        for($i=0; $i<$ln; $i++){
-            $vGlue = '';
-            $sap = '';
-            foreach($column as $hd){
-                $values[$i][$hd] = '';
-                $vGlue .= "'".$values[$i][$hd]."'".$sap ;
-                $sap = ', ';
-            }
-
-            $sqlInsert = $separator."(".$vGlue.")";
-            $separator = ', ';
-        }
-
-        return $sqlInsert ;
-    }
-
-    /**
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.0
-     * @param array $arr
-     * @param string $separator
-     * @param bool $sqlQuoted
-     * @param string $quote
-     * @return string
-     */
-    public static function arrayToCsv($arr=array(), $separator=', ', $sqlQuoted = true, $quote = '`'){
-
-        if(is_array($arr) and count($arr)>0){
-            $sap='';
-            $return='';
-            foreach($arr as $r){
-                if($sqlQuoted == true)  $return.=$sap.$quote.$r.$quote;
-                else  $return.=$sap.$r;
-                $sap=$separator;
-            }
-            return $return;
-
-        }else return '';
-    }
-
-    //========================== end of in-progress work =============================
 
     //=========== very customized functions only project basis : (zend model helper)================
 
@@ -1468,30 +1326,6 @@ class SQLi extends mysqli
     }
 
 
-    //========== end of project specific functions =================================================
-
-    //Ideas to implementat_role
-    /**
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.0
-     * @param $columnName
-     * @param string $type
-     * @param string $length
-     * @param bool $notNull
-     * @return bool
-     */
-    public function addColumnInCurrentDomain($columnName, $type= 'varchar', $length='255', $notNull = true){
-        // todo - write this
-        return false;
-    }
-
-    public function alterColumnName(){
-        return false;
-    }
-
-    public function removeColumn(){
-        return false;
-    }
-    //end of ideas
+    #========== end of project specific functions =================================================
 }
 

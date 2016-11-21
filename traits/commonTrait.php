@@ -7,21 +7,57 @@
  * Time: 5:15 PM
  */
 
-namespace commonFunction ;
-
 
 trait commonFunction {
 
 
     /**
-     * Basic and simple sanitize.
-     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
-     * @since 1.0.5
+     * Alias of sanitizeSimple
+     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.6
      * @param $data
      * @return string
      */
-    public function sanitizeSimple($data){
+    public static function sanitize($data){
         return htmlentities($data, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Basic and simple sanitize.
+     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param $data
+     * @param bool $doubleCheck - some times it won't work only htmlentities from copy -pasted text then make it true.
+     * @return string
+     */
+    public function sanitizeSimple($data, $doubleCheck = false){
+        if($doubleCheck) $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+        return htmlentities($data, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Removing non-utf char and double space then making html escape.
+     * @author Md. Atiqur Rahman <atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.5
+     * @param $data
+     * @return mixed|string
+     */
+    public function sanitizeSmart($data){
+
+        //ALTER DATABASE databaseName CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+        //ALTER TABLE tableName CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+        //ALTER TABLE rma CHARACTER SET utf8 COLLATE utf8_general_ci;ALTER TABLE rma CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
+        //$mysqli->set_charset("utf8")
+        //$mysqli->character_set_name() --todo must improve these part
+
+        $str = trim($data);
+        $str = iconv("UTF-8", "UTF-8//IGNORE", $str); // drop all non utf-8 characters
+
+        // this is some bad utf-8 byte sequence that makes mysql complain - control and formatting i think
+        $str = preg_replace('/(?>[\x00-\x1F]|\xC2[\x80-\x9F]|\xE2[\x80-\x8F]{2}|\xE2\x80[\xA4-\xA8]|\xE2\x81[\x9F-\xAF])/', '-', $str);
+        $str = preg_replace('/\s+/', ' ', $str);
+        $str = $this->sanitizeSimple($str);
+        return $str;
     }
 
 
@@ -73,7 +109,7 @@ trait commonFunction {
      */
     public static function dump($var, $die=true, $die_msg=NULL, $varDump=false){
 
-        if('comment'===$die){   echo '<!-- <pre>';}
+        if('comment'===$die){   echo '<!-- <pre>'; }
         else{ echo '<pre>';}
 
         if($varDump===true)  var_dump($var);
