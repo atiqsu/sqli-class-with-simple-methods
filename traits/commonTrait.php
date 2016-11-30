@@ -12,6 +12,23 @@ trait commonFunction {
 
 
     /**
+     * Get the time difference in minute
+     * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
+     * @since 1.0.0
+     * @param $time1
+     * @param string $time2
+     * @param int $unit
+     * @return float
+     */
+    public static function getTimeDifferenceInMinute($time1, $time2= 'now', $unit=60){
+
+        if($time2 == 'now'){
+            return ((strtotime(date('Y-m-d H:i:s')) - strtotime($time1))/$unit) ;
+        }
+        return ((strtotime($time2) - strtotime($time1))/$unit) ;
+    }
+
+    /**
      * Alias of sanitizeSimple
      * @author Md. Atiqur Rahman <atiqur@shaficonsultancy.com, atiq.cse.cu0506.su@gmail.com>
      * @since 1.0.6
